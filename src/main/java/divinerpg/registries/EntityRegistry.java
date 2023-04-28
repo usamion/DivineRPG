@@ -841,7 +841,7 @@ public class EntityRegistry {
         event.registerEntityRenderer(SENG.get(),             (Context context) -> new RenderDivineMob<>(context, "seng",  new ModelSeng<>(context), 0.3F));
         event.registerEntityRenderer(SABEAR.get(),           (Context context) -> new RenderDivineMob<>(context, "sabear",  new ModelSabear<>(context), 0.8F));
         event.registerEntityRenderer(WOLPERTINGER.get(),     (Context context) -> new RenderDivineMob<>(context, "wolpertinger",  new ModelWolpertinger<>(context), 0.6F));
-        event.registerEntityRenderer(ROBIN.get(),            (Context context) -> new RenderDivineMob<>(context, "robin",  new ModelRobin<>(context), 0.1F));
+        event.registerEntityRenderer(ROBIN.get(),            (Context context) -> new RenderDivineMob<>(context, "robin",  new ModelRobin(context), 0.1F));
 
         //Eden
         event.registerEntityRenderer(GLINTHOP.get(),	    RenderGlinthop::new);
@@ -964,13 +964,13 @@ public class EntityRegistry {
     }
 
     private static final <T extends Mob> void registerMobAttributes(EntityAttributeCreationEvent event, RegistryObject<EntityType<T>> entity) {
-        event.put(entity.get(), Mob.createMobAttributes().add(Attributes.MAX_HEALTH, normalHealth).add(Attributes.MOVEMENT_SPEED, normalSpeed).build());
+        event.put(entity.get(), Mob.createMobAttributes().add(Attributes.MAX_HEALTH, normalHealth).add(Attributes.ATTACK_DAMAGE, 1).add(Attributes.MOVEMENT_SPEED, normalSpeed).build());
     }
     private static final <T extends Mob> void registerMobAttributes(EntityAttributeCreationEvent event, RegistryObject<EntityType<T>> entity, double health) {
-        event.put(entity.get(), Mob.createMobAttributes().add(Attributes.MAX_HEALTH, health).add(Attributes.MOVEMENT_SPEED, normalSpeed).add(Attributes.FOLLOW_RANGE, normalFollowRange).build());
+        event.put(entity.get(), Mob.createMobAttributes().add(Attributes.MAX_HEALTH, health).add(Attributes.ATTACK_DAMAGE, 1).add(Attributes.MOVEMENT_SPEED, normalSpeed).add(Attributes.FOLLOW_RANGE, normalFollowRange).build());
     }
     private static final <T extends Mob> void registerMobAttributes(EntityAttributeCreationEvent event, RegistryObject<EntityType<T>> entity, double health, double speed, double followRange) {
-        event.put(entity.get(), Mob.createMobAttributes().add(Attributes.MAX_HEALTH, health).add(Attributes.MOVEMENT_SPEED, speed).add(Attributes.FOLLOW_RANGE, followRange).build());
+        event.put(entity.get(), Mob.createMobAttributes().add(Attributes.MAX_HEALTH, health).add(Attributes.ATTACK_DAMAGE, 1).add(Attributes.MOVEMENT_SPEED, speed).add(Attributes.FOLLOW_RANGE, followRange).build());
     }
     private static final <T extends Monster> void registerMonsterAttributes(EntityAttributeCreationEvent event, RegistryObject<EntityType<T>> entity, double health) {
         event.put(entity.get(), Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, health).add(Attributes.ATTACK_DAMAGE, normalDamage).add(Attributes.MOVEMENT_SPEED, normalSpeed).add(Attributes.FOLLOW_RANGE, normalFollowRange).build());
