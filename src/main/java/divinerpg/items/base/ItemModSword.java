@@ -1,68 +1,84 @@
 package divinerpg.items.base;
 
-import com.google.common.collect.*;
+import divinerpg.capability.ArcanaProvider;
+import divinerpg.enums.ToolStats;
+import divinerpg.registries.EnchantmentRegistry;
 import divinerpg.util.LocalizeUtils;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.ai.attributes.*;
+import net.minecraft.stats.Stats;
+import net.minecraft.world.*;
+import net.minecraft.world.effect.*;
+import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
+import net.minecraft.world.item.enchantment.*;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.api.distmarker.*;
-
 import javax.annotation.Nullable;
 import java.util.*;
 
 public class ItemModSword extends SwordItem {
-
+    public int arcanaConsumedUse;
+    public int arcanaConsumedAttack;
+    public int cooldown;
+    public ToolStats sword;
+    //Have rarity
     public ItemModSword(Rarity rarity, Tier tier) {
-        super(tier, 1, 1.0F, new Item.Properties().rarity(rarity));
+        super(tier, 1, tier.getSpeed(), new Properties().rarity(rarity));
+        sword = (ToolStats)tier;
     }
-
+    //No rarity
     public ItemModSword(Tier tier) {
-        super(tier, 1, 1.0F, new Item.Properties());
+        super(tier, 1, tier.getSpeed(), new Properties());
+        sword = (ToolStats)tier;
     }
-
-    public ItemModSword(Tier tier, Item.Properties properties) {
-        super(tier, 1, 1.0F, properties);
+    //Fire-resistant swords
+    public ItemModSword(Tier tier, Properties properties) {
+        super(tier, 1, tier.getSpeed(), properties);
+        sword = (ToolStats)tier;
     }
-
+    public ItemModSword setAttackArcanaConsumption(int amount) {
+    	arcanaConsumedAttack = amount;
+    	return this;
+    }
+    //TODO: to prevent from spam clicking to inflict effects on targets that weren't hurt
+    @Override public boolean onLeftClickEntity(ItemStack itemstack, Player player, Entity entity) {
+        if(entity instanceof LivingEntity livingEntity) {
+    	    if(sword.getSwordSpecial() == ToolStats.SwordSpecial.SLOW) livingEntity.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, sword.effectSec * 20, sword.effectPower));
+            if(sword.getSwordSpecial() == ToolStats.SwordSpecial.POISON) livingEntity.addEffect(new MobEffectInstance(MobEffects.POISON, sword.effectSec * 20, sword.effectPower));
+            if(sword.getSwordSpecial() == ToolStats.SwordSpecial.FLAME) livingEntity.setSecondsOnFire(sword.effectSec);
+        } return false;
+    }
+    public void arcanicAttack(ItemStack stack, Player player, Entity entity) {}
+    protected InteractionResultHolder<ItemStack> arcanicUse(Level level, Player player, InteractionHand hand){
+    	return InteractionResultHolder.success(player.getItemInHand(hand));
+    }
+    @Override public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        return player.getCapability(ArcanaProvider.ARCANA).map(arcana -> {
+            if(arcanaConsumedUse != 0 && arcana.getAmount(level.isClientSide()) >= arcanaConsumedUse) {
+                arcana.modifyAmount(player, -arcanaConsumedUse);
+                player.getCooldowns().addCooldown(this, cooldown);
+                player.awardStat(Stats.ITEM_USED.get(this));
+                return arcanicUse(level, player, hand);
+            } return super.use(level, player, hand);
+        }).orElse(super.use(level, player, hand));
+    }
+    @Override public boolean canApplyAtEnchantingTable(ItemStack stack, Enchantment enchantment) {
+        if(sword.getSwordSpecial() == ToolStats.SwordSpecial.FLAME && enchantment == Enchantments.FIRE_ASPECT ||
+           sword.getSwordSpecial() == ToolStats.SwordSpecial.SLOW && enchantment == EnchantmentRegistry.BRAIN_FREEZE.get()) return false;
+        else return enchantment.category.canEnchant(stack.getItem());
+    }
     @OnlyIn(Dist.CLIENT)
-    public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<Component> tooltip, TooltipFlag flagIn) {
-        addAdditionalInformation(tooltip);
-        if (stack.getMaxDamage() == -1) {
-            tooltip.add(LocalizeUtils.infiniteUses());
-        }
-    }
-
-    protected void addAdditionalInformation(List<Component> list) {
-    }
-
-    @Override
-    public Multimap<Attribute, AttributeModifier> getAttributeModifiers(final EquipmentSlot slot, final ItemStack stack) {
-        final Multimap<Attribute, AttributeModifier> modifiers = ArrayListMultimap.create(super.getAttributeModifiers(slot, stack));
-
-        if (slot == EquipmentSlot.MAINHAND) {
-            replaceModifier(modifiers, Attributes.ATTACK_SPEED, BASE_ATTACK_SPEED_UUID, getTier().getSpeed());
-        }
-
-        return ImmutableMultimap.copyOf(modifiers);
-    }
-
-    /**
-     * Replace a modifier in the {@link Multimap} with a copy that's had {@code multiplier} applied to its value.
-     *
-     * @param modifierMultimap The Multimap
-     * @param attribute        The attribute being modified
-     * @param id               The ID of the modifier
-     * @param multiplier       The multiplier to apply
-     */
-    private void replaceModifier(final Multimap<Attribute, AttributeModifier> modifierMultimap, final Attribute attribute, final UUID id, final double multiplier) {
-        final Collection<AttributeModifier> modifiers = modifierMultimap.get(attribute);
-        final Optional<AttributeModifier> modifierOptional = modifiers.stream().filter(attributeModifier -> attributeModifier.getId().equals(id)).findFirst();
-
-        modifierOptional.ifPresent(modifier -> {
-            modifiers.remove(modifier);
-            modifiers.add(new AttributeModifier(modifier.getId(), modifier.getName(), modifier.getAmount() * multiplier, modifier.getOperation()));
-        });
+    @Override public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<Component> tooltip, TooltipFlag flagIn) {
+        super.appendHoverText(stack, worldIn, tooltip, flagIn);
+        if(sword.getSwordSpecial() == ToolStats.SwordSpecial.ARCANA_DAMAGE) tooltip.add(LocalizeUtils.weakenedWithoutArcana());
+        if(sword.getSwordSpecial() == ToolStats.SwordSpecial.FLAME) tooltip.add(LocalizeUtils.burn(sword.effectSec));
+        if(sword.getSwordSpecial() == ToolStats.SwordSpecial.LIGHTNING) tooltip.add(LocalizeUtils.lightningShots());
+        if(sword.getSwordSpecial() == ToolStats.SwordSpecial.POISON) tooltip.add(LocalizeUtils.poison(sword.effectSec));
+        if(sword.getSwordSpecial() == ToolStats.SwordSpecial.SLOW) tooltip.add(LocalizeUtils.slow(sword.effectSec));
+        if(sword.getSwordSpecial() == ToolStats.SwordSpecial.SPEED) tooltip.add(LocalizeUtils.i18n("shadow_saber"));
+        if(arcanaConsumedUse > 0) tooltip.add(LocalizeUtils.arcanaConsumed(arcanaConsumedUse));
+        if(arcanaConsumedAttack > 0) tooltip.add(LocalizeUtils.arcanaConsumed(arcanaConsumedAttack));
+        if(!canBeDepleted()) stack.getOrCreateTag().putBoolean("Unbreakable", true);
     }
 }

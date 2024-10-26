@@ -38,23 +38,21 @@ public class EntityTheEye extends EntityDivineMonster {
     public void tick() {
         super.tick();
         LivingEntity entity = this.getTarget();
-        if(entity != null) {
-            if (entity instanceof ServerPlayer && (isLookingAt(this, entity) || isLookingAt(entity, this))) {
-                entity.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 30, 0, false, true));
-                TriggerRegistry.DIVINERPG_EYE.trigger((ServerPlayer) entity);
-            }
+        if(entity != null && entity instanceof ServerPlayer && (isLookingAt(this, entity) || isLookingAt(entity, this))) {
+            entity.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 120, 0, false, true));
+            TriggerRegistry.DIVINERPG_EYE.trigger((ServerPlayer) entity);
         }
     }
     public static boolean theEyeSpawnRule(EntityType<? extends Monster> typeIn, ServerLevelAccessor worldIn, MobSpawnType reason, BlockPos pos, RandomSource randomIn) {
         return pos.getY() < 0 && checkMonsterSpawnRules(typeIn, worldIn, reason, pos, randomIn);
     }
 
-    boolean isLookingAt(LivingEntity firstEntity, LivingEntity secondEntity) {
-            Vec3 vec3 = secondEntity.getViewVector(64.0F).normalize();
-            Vec3 vec31 = new Vec3(firstEntity.getX() - secondEntity.getX(), firstEntity.getEyeY() - secondEntity.getEyeY(), firstEntity.getZ() - secondEntity.getZ());
+    boolean isLookingAt(LivingEntity target, LivingEntity looking) {
+            Vec3 vec3 = looking.getViewVector(64.0F).normalize();
+            Vec3 vec31 = new Vec3(target.getX() - looking.getX(), target.getEyeY() - looking.getEyeY(), target.getZ() - looking.getZ());
             double d0 = vec31.length();
             vec31 = vec31.normalize();
             double d1 = vec3.dot(vec31);
-            return d1 > 1.0D - 0.025D / d0 ? secondEntity.hasLineOfSight(firstEntity) : false;
+            return d1 > 1.0D - 0.025D / d0 ? looking.hasLineOfSight(target) : false;
     }
 }

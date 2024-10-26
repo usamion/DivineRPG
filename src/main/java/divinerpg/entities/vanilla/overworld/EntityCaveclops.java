@@ -1,7 +1,8 @@
 package divinerpg.entities.vanilla.overworld;
 
 import divinerpg.entities.base.EntityDivineMonster;
-import divinerpg.entities.projectile.EntityCaveRock;
+import divinerpg.entities.projectile.EntityShooterBullet;
+import divinerpg.enums.BulletType;
 import divinerpg.registries.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundEvent;
@@ -10,6 +11,7 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.monster.*;
+import net.minecraft.world.entity.projectile.ThrowableProjectile;
 import net.minecraft.world.level.*;
 import net.minecraftforge.common.Tags.Biomes;
 
@@ -50,12 +52,12 @@ public class EntityCaveclops extends EntityDivineMonster implements RangedAttack
     @Override
     public void performRangedAttack(LivingEntity target, float distanceFactor) {
         if (isAlive() && getTarget() != null && !level().isClientSide) {
-            EntityCaveRock projectile = new EntityCaveRock(EntityRegistry.CAVE_ROCK.get(), this, level());
+            ThrowableProjectile projectile = new EntityShooterBullet(EntityRegistry.SHOOTER_BULLET.get(), this, level(), BulletType.CAVE_ROCK);
             double d0 = getTarget().getX() - this.getX();
             double d1 = getTarget().getY(0.3333333333333333D) - projectile.getY();
             double d2 = getTarget().getZ() - this.getZ();
             double d3 = Mth.sqrt((float) (d0 * d0 + d2 * d2));
-            projectile.shoot(d0, d1 + d3 * (double) 0.2F, d2, 1.6F, 0.8F);
+            projectile.shoot(d0, d1 + d3 * .2, d2, 1.6F, 0.8F);
             level().addFreshEntity(projectile);
         }
     }

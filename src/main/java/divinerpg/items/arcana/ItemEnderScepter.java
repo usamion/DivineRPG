@@ -1,49 +1,42 @@
 package divinerpg.items.arcana;
 
-import divinerpg.capability.ArcanaProvider;
 import divinerpg.items.base.ItemMod;
 import divinerpg.util.LocalizeUtils;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.*;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.*;
-import net.minecraft.world.phys.Vec3;
-
+import net.minecraft.world.phys.*;
 import javax.annotation.Nullable;
 import java.util.List;
 
 public class ItemEnderScepter extends ItemMod {
-
     public ItemEnderScepter() {
         super(new Properties().stacksTo(1));
+        arcanaConsumedUse = 75;
+        cooldown = 10;
     }
-
     @Override
-    public InteractionResultHolder<ItemStack> use(Level world, Player player, InteractionHand hand) {
-        player.getCapability(ArcanaProvider.ARCANA).ifPresent(arcana -> {
-            if (arcana.getArcana() >= 75) {
-                Vec3 start = player.getEyePosition(1);
-                Vec3 vec31 = player.getViewVector(1);
-                Vec3 end = start.add(vec31.x * 32, vec31.y * 32, vec31.z * 32);
-                ClipContext pos = new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.ANY, player);
-
-                player.fallDistance = 0;
-                player.ejectPassengers();
-                player.moveTo(pos.getTo());
-                player.playSound(SoundEvents.CHORUS_FRUIT_TELEPORT, 1, 1);
-                arcana.consume(player, 75);
-            }
-        });
-
-        return super.use(world, player, hand);
+    protected InteractionResultHolder<ItemStack> arcanicUse(Level level, Player player, InteractionHand hand) {
+        int blockReachDistance = 40;
+        Vec3 vec3d = player.getEyePosition(1);
+        Vec3 vec3d1 = player.getViewVector(1);
+        Vec3 vec3d2 = vec3d.add(vec3d1.x * blockReachDistance, vec3d1.y * blockReachDistance, vec3d1.z * blockReachDistance);
+        BlockHitResult pos = player.level().clip(new ClipContext(vec3d, vec3d2, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+    	player.resetFallDistance();
+        if(player.isPassenger()) player.stopRiding();
+        for(int i = 0; i < 5; i++) level.addParticle(ParticleTypes.PORTAL, player.getX() + player.random.nextDouble() - .5, player.getY(), player.getZ() + player.random.nextDouble() - .5, 0D, 0D, 0D);
+        player.moveTo(pos.getLocation());
+        for(int i = 0; i < 5; i++) level.addParticle(ParticleTypes.PORTAL, player.getX() + player.random.nextDouble() - .5, player.getY(), player.getZ() + player.random.nextDouble() - .5, 0D, 0D, 0D);
+        player.playSound(SoundEvents.CHORUS_FRUIT_TELEPORT, 1, 1);
+    	return InteractionResultHolder.success(player.getItemInHand(hand));
     }
-
-    @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<Component> tooltip, TooltipFlag flagIn) {
-        tooltip.add(LocalizeUtils.arcanaConsumed(75));
-        tooltip.add(LocalizeUtils.i18n("tooltip.ender_scepter"));
-        tooltip.add(LocalizeUtils.infiniteUses());
+    @Override public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<Component> tooltip, TooltipFlag flagIn) {
+        tooltip.add(LocalizeUtils.i18n("ender_scepter"));
+        super.appendHoverText(stack, worldIn, tooltip, flagIn);
+        stack.getOrCreateTag().putBoolean("Unbreakable", true);
     }
 }

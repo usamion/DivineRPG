@@ -45,9 +45,9 @@
     "divinerpg:orange_steel",
     "divinerpg:purple_steel",
     "divinerpg:red_steel",
-    "divinerpg:white_steel",
+    "divinerpg:steel",
     "divinerpg:yellow_steel",
-    "divinerpg:teal_steel",
+    "divinerpg:cyan_steel",
     "divinerpg:aquatonic_bricks",
     "divinerpg:lava_bricks",
     "divinerpg:arlemite_bricks",
@@ -174,11 +174,11 @@
     "divinerpg:barred_door",
     "divinerpg:frozen_bricks",
     "divinerpg:coalstone_slab",
-    "divinerpg:blue_vane",
-    "divinerpg:cyan_vane",
-    "divinerpg:purple_vane",
-    "divinerpg:red_vane",
-    "divinerpg:yellow_vane",
+    "divinerpg:seeping_obsidian",
+    "divinerpg:glittering_obsidian",
+    "divinerpg:vwooping_obsidian",
+    "divinerpg:bleeding_obsidian",
+    "divinerpg:shining_obsidian",
     "divinerpg:metal_caging",
     "divinerpg:elevantium",
     "divinerpg:hive_egg",
@@ -219,6 +219,7 @@
     "divinerpg:glaciline",
     "divinerpg:olivine_block",
     "divinerpg:budding_olivine",
-    "divinerpg:olivine_cluster"
+    "divinerpg:olivine_cluster",
+    "divinerpg:calcified_brain"
   ]
 }

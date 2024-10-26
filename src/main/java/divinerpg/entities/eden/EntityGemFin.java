@@ -1,71 +1,77 @@
 package divinerpg.entities.eden;
 
 import divinerpg.registries.*;
+import divinerpg.util.LocalizeUtils;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.contents.TranslatableContents;
+import net.minecraft.network.syncher.*;
 import net.minecraft.sounds.*;
 import net.minecraft.world.*;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.*;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 
 public class EntityGemFin extends AbstractSchoolingFish {
-    private byte variant;
-    private boolean hasBeenFed;
+	private static final EntityDataAccessor<Byte> VARIANT = SynchedEntityData.defineId(Mob.class, EntityDataSerializers.BYTE);
+    private boolean hasBeenFed = false;
 
     public EntityGemFin(EntityType<? extends EntityGemFin> type, Level level) {
         super(type, level);
-        variant = (byte) getRandom().nextInt(3);
-        hasBeenFed = false;
+        if(!level.isClientSide()) entityData.set(VARIANT, (byte) getRandom().nextInt(3));
     }
-
+    @Override
+    protected void defineSynchedData() {
+		super.defineSynchedData();
+    	entityData.define(VARIANT, (byte)0);
+	}
     public void addAdditionalSaveData(CompoundTag compound) {
         super.addAdditionalSaveData(compound);
-        compound.putBoolean("HasBeenFed", this.isFed());
-        compound.putByte("Variant", variant);
+        compound.putBoolean("HasBeenFed", isFed());
+        compound.putByte("Variant", entityData.get(VARIANT));
     }
 
     public void readAdditionalSaveData(CompoundTag compound) {
         super.readAdditionalSaveData(compound);
         if(compound.contains("HasBeenFed")) setFed(compound.getBoolean("HasBeenFed"));
-        if(compound.contains("Variant")) variant = compound.getByte("Variant");
+        entityData.set(VARIANT, compound.contains("Variant") ? compound.getByte("Variant") : (byte) getRandom().nextInt(3));
     }
 
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         ItemStack heldItem = player.getItemInHand(hand);
-        if (!this.hasBeenFed && heldItem.getItem() == BlockRegistry.gemOfTheDunes.get().asItem()) {
-            if (!player.isCreative()) {
-                heldItem.shrink(1);
-            }
-            this.setFed(true);
-            for (int i = 0; i < 7; ++i) {
-                double d0 = this.random.nextGaussian() * 0.02D;
-                double d1 = this.random.nextGaussian() * 0.02D;
-                double d2 = this.random.nextGaussian() * 0.02D;
-                this.level().addParticle(ParticleTypes.HEART, this.getRandomX(1.0D), this.getRandomY() + 0.5D, this.getRandomZ(1.0D), d0, d1, d2);
-            }
-            return InteractionResult.SUCCESS;
-        } else if (heldItem.getItem() == Items.WATER_BUCKET && this.isAlive()) {
+        if(!hasBeenFed && heldItem.getItem() == BlockRegistry.gemOfTheDunes.get().asItem()) {
+            if(!player.isCreative()) heldItem.shrink(1);
+            setFed(true);
+            for(int i = 0; i < 7; ++i) {
+                double d0 = random.nextGaussian() * .02, d1 = random.nextGaussian() * .02, d2 = random.nextGaussian() * .02;
+                level().addParticle(ParticleTypes.HEART, getRandomX(1D), getRandomY() + .5, getRandomZ(1D), d0, d1, d2);
+            } return InteractionResult.SUCCESS;
+        } else if(heldItem.getItem() == Items.WATER_BUCKET && isAlive()) {
             Bucketable.bucketMobPickup(player, hand, this);
             return InteractionResult.SUCCESS;
-        } else if (!this.hasBeenFed && !(heldItem.getItem() == BlockRegistry.gemOfTheDunes.get().asItem() || (heldItem.getItem() == Items.WATER_BUCKET))) {
-            player.displayClientMessage(MutableComponent.create(new TranslatableContents("message.feed_gem", null, null)), true);
+        } else if(!hasBeenFed && !(heldItem.getItem() == BlockRegistry.gemOfTheDunes.get().asItem() || (heldItem.getItem() == Items.WATER_BUCKET))) {
+            player.displayClientMessage(LocalizeUtils.clientMessage("feed_gem"), true);
             return InteractionResult.CONSUME;
-        } else if (this.hasBeenFed && heldItem.getItem() == BlockRegistry.gemOfTheDunes.get().asItem()) {
-            return InteractionResult.FAIL;
-        } else
-            return InteractionResult.PASS;
+        } else if(hasBeenFed && heldItem.getItem() == BlockRegistry.gemOfTheDunes.get().asItem()) return InteractionResult.FAIL;
+        else return InteractionResult.PASS;
     }
 
     public boolean removeWhenFarAway(double distanceToClosestPlayer) {
-        return !this.hasBeenFed;
+        return !hasBeenFed;
     }
-
+    @Override
+    public void saveToBucketTag(ItemStack stack) {
+    	super.saveToBucketTag(stack);
+    	stack.getTag().putByte("Variant", getVariant());
+    }
+    @Override
+    public void loadFromBucketTag(CompoundTag tag) {
+    	super.loadFromBucketTag(tag);
+    	if(tag.contains("Variant")) entityData.set(VARIANT, tag.getByte("Variant"));
+    }
     public ItemStack getBucketItemStack() {
         return new ItemStack(ItemRegistry.gem_fin_bucket.get());
     }
@@ -87,14 +93,14 @@ public class EntityGemFin extends AbstractSchoolingFish {
     }
 
     public void setFed(boolean bool) {
-        this.hasBeenFed = bool;
+        hasBeenFed = bool;
     }
 
     public boolean isFed() {
-        return this.hasBeenFed;
+        return hasBeenFed;
     }
 
     public byte getVariant() {
-        return variant;
+        return entityData.get(VARIANT);
     }
 }
